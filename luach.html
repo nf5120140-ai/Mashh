@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>לוח בית הכנסת</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@400;500;700;900&family=David+Libre:wght@400;500;700&family=Assistant:wght@400;600;700&family=Heebo:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F1E3D; --bg2:#0A1630; --panel:#15274E; --panel-edge:#22376A;
+    --accent:#C9A24B; --accent-bright:#E8CE80; --text:#EDE3CE; --muted:#93A1BE;
+    --grad:radial-gradient(120% 90% at 50% -10%, #16294f 0%, #0F1E3D 42%, #0A1630 100%);
+    --serif:'Frank Ruhl Libre','David Libre','Times New Roman',serif;
+    --sans:'Heebo','Arial',sans-serif;
+    --scale:1;
+    box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{font-size:calc(clamp(11px,1.32vw,30px) * var(--scale));height:100%}
+  body{height:100%;font-family:var(--serif);color:var(--text);background:var(--grad);
+    overflow:hidden;-webkit-font-smoothing:antialiased}
+  .frame{position:fixed;inset:0.7rem;border:2px solid var(--accent);
+    outline:1px solid rgba(201,162,75,.35);outline-offset:3px;pointer-events:none;opacity:.55;border-radius:4px}
+  .frame::before,.frame::after{content:"";position:absolute;width:1.6rem;height:1.6rem;border:2px solid var(--accent-bright);opacity:.9}
+  .frame::before{top:-2px;right:-2px;border-left:0;border-bottom:0}
+  .frame::after{bottom:-2px;left:-2px;border-right:0;border-top:0}
+  .stage{height:100%;display:grid;grid-template-rows:auto 1fr auto;gap:1rem;padding:2rem 2.4rem}
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;
+    padding-bottom:1rem;border-bottom:2px solid var(--accent);box-shadow:0 2px 0 rgba(232,206,128,.18)}
+  .weekday{font-size:1.5rem;color:var(--accent-bright);letter-spacing:.02em}
+  .hdate{font-size:3.4rem;font-weight:900;line-height:1.02;color:var(--text);text-shadow:0 1px 0 rgba(0,0,0,.4)}
+  .gdate{font-size:1.12rem;color:var(--muted);margin-top:.25rem}
+  .parasha{margin-top:.55rem;font-size:1.5rem;color:var(--accent);font-weight:700}
+  .parasha::before{content:"\2756";font-size:.9em;margin-inline-end:.5rem;opacity:.8}
+  .clockwrap{text-align:center;direction:ltr}
+  .clock{font-size:6.2rem;font-weight:700;line-height:.9;color:var(--accent-bright);letter-spacing:.01em;text-shadow:0 2px 10px rgba(0,0,0,.35)}
+  .secs{font-family:var(--sans);font-variant-numeric:tabular-nums;font-size:1.5rem;color:var(--muted);letter-spacing:.15em}
+  .nextprayer{margin-top:.5rem;font-family:var(--serif);font-size:1.35rem;color:var(--text);direction:rtl}
+  .nextprayer b{color:var(--accent-bright)}
+  .nextprayer .dot{color:var(--accent);margin:0 .5rem}
+  main{display:grid;grid-template-columns:1.1fr 1fr 1.45fr;gap:1.6rem;min-height:0}
+  .col{background:linear-gradient(180deg,var(--panel) 0%,var(--bg2) 100%);border:1px solid var(--panel-edge);border-radius:8px;
+    box-shadow:inset 0 0 0 1px rgba(201,162,75,.10), 0 8px 24px rgba(0,0,0,.28);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .col-title{font-size:1.7rem;font-weight:700;color:var(--accent-bright);text-align:center;padding:.85rem 1rem .7rem}
+  .col-title .rule{display:block;height:2px;margin:.5rem auto 0;width:62%;background:linear-gradient(90deg,transparent,var(--accent),transparent)}
+  .col-body{flex:1;min-height:0;padding:.6rem 1.2rem 1.1rem;overflow:hidden}
+  .tgroup{margin-bottom:.9rem}
+  .tgroup h3{font-size:1.3rem;color:var(--accent);font-weight:700;padding-bottom:.2rem;margin-bottom:.35rem;border-bottom:1px dashed rgba(147,161,190,.3)}
+  .trow{display:flex;justify-content:space-between;align-items:baseline;padding:.34rem .55rem;border-radius:6px;font-size:1.5rem}
+  .trow .lbl{color:var(--text)}
+  .trow .tm{font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums;color:var(--text);letter-spacing:.02em}
+  .trow.is-next{background:linear-gradient(90deg,rgba(201,162,75,.28),rgba(201,162,75,.06));box-shadow:inset 0 0 0 1px rgba(232,206,128,.55);animation:pulse 2.4s ease-in-out infinite}
+  .trow.is-next .lbl,.trow.is-next .tm{color:var(--accent-bright)}
+  .trow.is-next .lbl::before{content:"\25C0 ";color:var(--accent);font-size:.7em}
+  @keyframes pulse{0%,100%{box-shadow:inset 0 0 0 1px rgba(232,206,128,.4)}50%{box-shadow:inset 0 0 0 1px rgba(232,206,128,.9)}}
+  .zrow{display:flex;justify-content:space-between;align-items:baseline;padding:.36rem .35rem;font-size:1.32rem;border-bottom:1px solid rgba(147,161,190,.14)}
+  .zrow:last-child{border-bottom:0}
+  .zrow .zlbl{color:var(--text)}
+  .zrow .znote{font-family:var(--sans);font-size:.72em;color:var(--muted);margin-inline-start:.4rem}
+  .zrow .ztm{font-family:var(--sans);font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent);letter-spacing:.02em}
+  .stage-ann{position:relative;height:100%}
+  .slide{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;opacity:0;transition:opacity .8s ease;padding:.5rem}
+  .slide.on{opacity:1}
+  .slide .a-title{font-size:2.1rem;font-weight:900;color:var(--accent-bright);margin-bottom:.9rem;line-height:1.1}
+  .slide .a-body{font-size:1.55rem;line-height:1.5;color:var(--text);max-width:26ch}
+  .slide img{max-width:100%;max-height:100%;object-fit:contain;border-radius:6px;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+  .slide .a-cap{margin-top:.6rem;font-size:1.2rem;color:var(--muted)}
+  .ann-empty{height:100%;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:1.4rem}
+  .dots{display:flex;gap:.4rem;justify-content:center;padding-top:.4rem}
+  .dots span{width:.55rem;height:.55rem;border-radius:50%;background:rgba(147,161,190,.35)}
+  .dots span.on{background:var(--accent-bright)}
+  footer{text-align:center;color:var(--muted);font-size:1.15rem;padding-top:.4rem;border-top:1px solid rgba(201,162,75,.3)}
+  footer b{color:var(--accent);font-weight:700}
+  .errbar{position:fixed;bottom:.9rem;left:50%;transform:translateX(-50%);background:#5b1f27;color:#ffd7b0;font-family:var(--sans);font-size:.9rem;padding:.4rem 1rem;border-radius:6px;display:none;z-index:9}
+  .hidden{display:none!important}
+  @media (prefers-reduced-motion:reduce){.trow.is-next{animation:none}}
+
+  /* ---------- gear + edit mode ---------- */
+  #gear{position:fixed;bottom:1.2rem;right:1.2rem;z-index:40;width:2.6rem;height:2.6rem;border-radius:50%;
+    background:rgba(10,22,48,.85);border:1px solid var(--accent);color:var(--accent-bright);font-size:1.3rem;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:0;transition:opacity .4s;font-family:var(--sans)}
+  #gear.show{opacity:.85}
+  #editor{position:fixed;inset:0;z-index:50;display:none;font-family:var(--sans);direction:rtl}
+  #editor.open{display:block}
+  .ed-scrim{position:absolute;inset:0;background:rgba(4,10,24,.55);backdrop-filter:blur(2px)}
+  .ed-panel{position:absolute;top:0;right:0;height:100%;width:min(440px,94vw);background:#0d1a34;
+    border-left:2px solid var(--accent);box-shadow:-12px 0 40px rgba(0,0,0,.5);display:flex;flex-direction:column}
+  .ed-head{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.1rem;border-bottom:1px solid #22376A;background:#0a1630}
+  .ed-head h2{font-family:var(--serif);font-size:1.3rem;color:var(--accent-bright);font-weight:700}
+  .ed-head .x{background:none;border:0;color:var(--muted);font-size:1.5rem;cursor:pointer}
+  .ed-body{flex:1;overflow:auto;padding:.6rem 1.1rem 1.2rem}
+  .ed-body::-webkit-scrollbar{width:8px}.ed-body::-webkit-scrollbar-thumb{background:#22376A;border-radius:4px}
+  details.sec{border:1px solid #22376A;border-radius:8px;margin:.6rem 0;background:#101f3c;overflow:hidden}
+  details.sec>summary{list-style:none;cursor:pointer;padding:.7rem .9rem;font-size:1.02rem;color:var(--accent-bright);font-weight:600;background:#12244a;display:flex;justify-content:space-between;align-items:center}
+  details.sec>summary::-webkit-details-marker{display:none}
+  details.sec>summary::after{content:"\25BC";font-size:.7rem;color:var(--muted);transition:transform .2s}
+  details.sec[open]>summary::after{transform:rotate(180deg)}
+  .sec-in{padding:.7rem .9rem}
+  .fld{margin-bottom:.7rem}
+  .fld>label{display:block;font-size:.82rem;color:var(--muted);margin-bottom:.25rem}
+  .fld input[type=text],.fld input[type=number],.fld input[type=time],.fld input[type=date],.fld select,.fld textarea{
+    width:100%;background:#0a1630;border:1px solid #2a3f6f;color:var(--text);border-radius:6px;padding:.5rem .6rem;font-size:.95rem;font-family:var(--sans)}
+  .fld textarea{resize:vertical;min-height:3.2rem}
+  .fld.row{display:flex;gap:.5rem;align-items:flex-end}
+  .fld.row>*{flex:1}
+  .chk{display:flex;align-items:center;gap:.5rem;margin:.35rem 0;font-size:.92rem;color:var(--text)}
+  .chk input{width:1.15rem;height:1.15rem;accent-color:var(--accent)}
+  .rangewrap{display:flex;align-items:center;gap:.6rem}
+  .rangewrap input[type=range]{flex:1;accent-color:var(--accent)}
+  .rangewrap .val{font-variant-numeric:tabular-nums;color:var(--accent-bright);min-width:2.6rem;text-align:center}
+  .listrow{border:1px solid #22376A;border-radius:6px;padding:.55rem;margin-bottom:.5rem;background:#0d1c3a}
+  .listrow .rowtop{display:flex;gap:.4rem;align-items:center}
+  .listrow .rowtop input{flex:1}
+  .minibtn{background:#1a2c52;border:1px solid #2a3f6f;color:var(--text);border-radius:6px;padding:.35rem .5rem;font-size:.85rem;cursor:pointer;line-height:1}
+  .minibtn:hover,.minibtn:hover{background:#25406f}
+  .addbtn{width:100%;background:#12244a;border:1px dashed var(--accent);color:var(--accent-bright);border-radius:6px;padding:.55rem;font-size:.9rem;cursor:pointer;margin-top:.2rem}
+  .swatches{display:grid;grid-template-columns:repeat(5,1fr);gap:.5rem;margin-top:.3rem}
+  .sw{height:2.4rem;border-radius:6px;cursor:pointer;border:2px solid transparent;position:relative}
+  .sw.sel{border-color:#fff}
+  .sw span{position:absolute;bottom:2px;left:0;right:0;text-align:center;font-size:.6rem;color:#fff;text-shadow:0 1px 2px #000}
+  .ed-foot{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;padding:.8rem 1.1rem;border-top:1px solid #22376A;background:#0a1630}
+  .ed-foot button{padding:.7rem;border-radius:7px;font-size:.95rem;font-weight:600;cursor:pointer;border:1px solid #2a3f6f;background:#16305a;color:var(--text);font-family:var(--sans)}
+  .ed-foot button.primary{grid-column:1/3;background:linear-gradient(90deg,var(--accent),var(--accent-bright));color:#1a1206;border:0}
+  .ed-note{font-size:.8rem;color:var(--muted);padding:.2rem 1.1rem .6rem;background:#0a1630}
+  .ed-note.ok{color:#7fd18a}.ed-note.bad{color:#ff9c8a}
+  .movebtns{display:flex;flex-direction:column;gap:.2rem}
+</style>
+</head>
+<body>
+  <div class="frame" id="frameEl"></div>
+  <div class="stage">
+    <header>
+      <div class="datecluster">
+        <div class="weekday" id="weekday">&mdash;</div>
+        <div class="hdate" id="hdate">&mdash;</div>
+        <div class="gdate" id="gdate">&mdash;</div>
+        <div class="parasha" id="parasha"></div>
+      </div>
+      <div class="clockwrap" id="clockwrap">
+        <div class="clock"><span id="clock">--:--</span></div>
+        <div class="secs" id="secs">00</div>
+        <div class="nextprayer" id="nextprayer"></div>
+      </div>
+    </header>
+    <main>
+      <section class="col" id="col-tefilot"><div class="col-title">זמני התפילות<span class="rule"></span></div><div class="col-body" id="tefilot-body"></div></section>
+      <section class="col" id="col-zmanim"><div class="col-title">זמני היום<span class="rule"></span></div><div class="col-body" id="zmanim-body"></div></section>
+      <section class="col" id="col-ann"><div class="col-title">הודעות ופרסומים<span class="rule"></span></div><div class="col-body"><div class="stage-ann" id="ann-stage"></div><div class="dots" id="ann-dots"></div></div></section>
+    </main>
+    <footer id="footer"></footer>
+  </div>
+
+  <div id="gear" title="מצב עריכה (מקש E)">&#9881;</div>
+  <div id="editor">
+    <div class="ed-scrim" id="ed-scrim"></div>
+    <div class="ed-panel">
+      <div class="ed-head"><h2>מצב עריכה</h2><button class="x" id="ed-close">&times;</button></div>
+      <div class="ed-body" id="ed-form"></div>
+      <div class="ed-note" id="ed-note">שינויים מוצגים מיד. לחץ "שמור לקובץ" כדי לשמור לצמיתות.</div>
+      <input type="file" id="backupfile" accept=".js,.json,text/javascript,application/json" style="display:none">
+      <div class="ed-foot">
+        <button class="primary" id="btn-save">💾 שמור לקובץ</button>
+        <button id="btn-savedev">📱 שמור במכשיר</button>
+        <button id="btn-load">📂 טען גיבוי</button>
+        <button id="btn-download">⬇ הורד גיבוי</button>
+        <button id="btn-copy">⧉ העתק קוד</button>
+        <button id="btn-clrlocal" style="grid-column:1/3;display:none;background:#3a2230;border-color:#5b1f27">↺ חזור לקובץ content.js</button>
+      </div>
+    </div>
+  </div>
+  <div class="errbar" id="errbar">שגיאה בקובץ התוכן — מציג את הגרסה התקינה האחרונה</div>
+
+  <script src="content.js"></script>
+  <script>
+  /* ================= presets ================= */
+  const PRESETS={
+    "ירושלים":{lat:31.7683,lon:35.2137,elevation:754},"תל אביב":{lat:32.0853,lon:34.7818,elevation:5},
+    "בני ברק":{lat:32.0807,lon:34.8338,elevation:30},"חיפה":{lat:32.7940,lon:34.9896,elevation:100},
+    "באר שבע":{lat:31.2518,lon:34.7913,elevation:260},"אשדוד":{lat:31.8040,lon:34.6550,elevation:15},
+    "פתח תקווה":{lat:32.0870,lon:34.8870,elevation:50},"נתניה":{lat:32.3215,lon:34.8532,elevation:30},
+    "מודיעין עילית":{lat:31.9330,lon:35.0430,elevation:320},"ביתר עילית":{lat:31.6960,lon:35.1150,elevation:800},
+    "בית שמש":{lat:31.7500,lon:34.9860,elevation:300},"אלעד":{lat:32.0520,lon:34.9510,elevation:120},
+    "צפת":{lat:32.9650,lon:35.4960,elevation:850},"טבריה":{lat:32.7920,lon:35.5310,elevation:-200},
+    "אשקלון":{lat:31.6690,lon:34.5710,elevation:50},"רחובות":{lat:31.8940,lon:34.8110,elevation:80},
+  };
+  /* ================= themes & fonts ================= */
+  const THEMES={
+    paroket:{name:"פרוכת",bg:"#0F1E3D",bg2:"#0A1630",panel:"#15274E",edge:"#22376A",accent:"#C9A24B",accentB:"#E8CE80",text:"#EDE3CE",muted:"#93A1BE",grad:"radial-gradient(120% 90% at 50% -10%, #16294f 0%, #0F1E3D 42%, #0A1630 100%)",chip:"#0F1E3D"},
+    night:{name:"לילה",bg:"#0d0d10",bg2:"#000000",panel:"#17171c",edge:"#2c2c34",accent:"#C9A24B",accentB:"#E8CE80",text:"#F0E9D6",muted:"#8b8b93",grad:"radial-gradient(120% 90% at 50% -10%, #1b1b20 0%, #0d0d10 45%, #000 100%)",chip:"#111"},
+    royal:{name:"מלכותי",bg:"#10233f",bg2:"#0a1830",panel:"#16305a",edge:"#274a80",accent:"#C6D3E6",accentB:"#FFFFFF",text:"#EAF1FA",muted:"#93A6C4",grad:"radial-gradient(120% 90% at 50% -10%, #1a3563 0%, #10233f 45%, #0a1830 100%)",chip:"#16305a"},
+    olive:{name:"זית",bg:"#1b2a1e",bg2:"#101c13",panel:"#24382a",edge:"#3a5742",accent:"#C9A24B",accentB:"#E8CE80",text:"#EDE6CE",muted:"#9db19f",grad:"radial-gradient(120% 90% at 50% -10%, #223420 0%, #1b2a1e 45%, #101c13 100%)",chip:"#24382a"},
+    marble:{name:"שיש",bg:"#EFE7D6",bg2:"#E4D8C0",panel:"#FBF6EA",edge:"#D8C9A6",accent:"#8A2E38",accentB:"#A83C48",text:"#2A2118",muted:"#6E6250",grad:"radial-gradient(120% 90% at 50% -10%, #F6EFDE 0%, #EFE7D6 45%, #E4D8C0 100%)",chip:"#EFE7D6"},
+  };
+  const FONTS={
+    classic:{name:"קלאסי",stack:"'Frank Ruhl Libre','David Libre',serif"},
+    antique:{name:"עתיק",stack:"'David Libre','Frank Ruhl Libre',serif"},
+    modern:{name:"מודרני",stack:"'Assistant','Heebo',sans-serif"},
+    soft:{name:"רך",stack:"'Heebo','Assistant',sans-serif"},
+  };
+  function defaultAppearance(){return {theme:"paroket",font:"classic",textScale:1,frame:true,showSeconds:true,
+    columnOrder:["tefilot","zmanim","announcements"],columnWidths:{tefilot:1.1,zmanim:1,announcements:1.45}};}
+  const COLMAP={tefilot:"col-tefilot",zmanim:"col-zmanim",announcements:"col-ann"};
+  const COLNAME={tefilot:"תפילות",zmanim:"זמנים",announcements:"הודעות"};
+
+  /* ================= solar / zmanim ================= */
+  const R=d=>d*Math.PI/180, DG=r=>r*180/Math.PI;
+  function julianDay(y,m,d){if(m<=2){y-=1;m+=12;}const A=Math.floor(y/100),B=2-A+Math.floor(A/4);return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(m+1))+d+B-1524.5;}
+  function solar(y,m,d,lat,lon,zenith){
+    const jd=julianDay(y,m,d)+0.5,T=(jd-2451545.0)/36525;
+    const L0=((280.46646+T*(36000.76983+T*0.0003032))%360+360)%360;
+    const M=357.52911+T*(35999.05029-0.0001537*T);
+    const e=0.016708634-T*(0.000042037+0.0000001267*T);
+    const C=Math.sin(R(M))*(1.914602-T*(0.004817+0.000014*T))+Math.sin(R(2*M))*(0.019993-0.000101*T)+Math.sin(R(3*M))*0.000289;
+    const appLong=(L0+C)-0.00569-0.00478*Math.sin(R(125.04-1934.136*T));
+    const obliq=23+(26+((21.448-T*(46.815+T*(0.00059-T*0.001813))))/60)/60;
+    const oc=obliq+0.00256*Math.cos(R(125.04-1934.136*T));
+    const decl=DG(Math.asin(Math.sin(R(oc))*Math.sin(R(appLong))));
+    const vY=Math.tan(R(oc/2))**2;
+    const eqT=4*DG(vY*Math.sin(2*R(L0))-2*e*Math.sin(R(M))+4*e*vY*Math.sin(R(M))*Math.cos(2*R(L0))-0.5*vY*vY*Math.sin(4*R(L0))-1.25*e*e*Math.sin(2*R(M)));
+    const noon=720-4*lon-eqT;
+    const cH=(Math.cos(R(zenith))-Math.sin(R(lat))*Math.sin(R(decl)))/(Math.cos(R(lat))*Math.cos(R(decl)));
+    const HA=(cH>=-1&&cH<=1)?DG(Math.acos(cH)):null;
+    return {noon,HA};
+  }
+  function minToStr(y,m,d,min,tz){if(min==null||isNaN(min))return "--:--";const dt=new Date(Date.UTC(y,m-1,d,0,0,0)+min*60000);
+    return new Intl.DateTimeFormat('he-IL',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:tz}).format(dt);}
+  function computeZmanim(y,m,d,loc,opt){
+    const elevDip=loc.elevation>0?0.0347*Math.sqrt(loc.elevation):0;
+    const sun=solar(y,m,d,loc.lat,loc.lon,90.833+elevDip);
+    if(sun.HA==null)return [{l:"__tzet__",t:null}];
+    const rise=sun.noon-4*sun.HA, set=sun.noon+4*sun.HA, noon=sun.noon, sha=(set-rise)/12;
+    let alot; if(opt.alot.method==='degrees'){const a=solar(y,m,d,loc.lat,loc.lon,90+opt.alot.degrees);alot=a.HA!=null?a.noon-4*a.HA:null;} else alot=rise-opt.alot.minutes;
+    let tzet; if(opt.tzet.method==='degrees'){const t=solar(y,m,d,loc.lat,loc.lon,90+opt.tzet.degrees);tzet=t.HA!=null?t.noon+4*t.HA:null;} else tzet=set+opt.tzet.minutes;
+    const dawn=rise-72,dusk=set+72,shaMGA=(dusk-dawn)/12;
+    const F=x=>minToStr(y,m,d,x,loc.tz);
+    const aN=opt.alot.method==='degrees'?opt.alot.degrees+"\u00B0":opt.alot.minutes+" ד׳";
+    const tN=opt.tzet.method==='degrees'?opt.tzet.degrees+"\u00B0":opt.tzet.minutes+" ד׳";
+    return [
+      {l:"עלות השחר",note:aN,t:F(alot)},{l:"הנץ החמה",note:"",t:F(rise)},
+      {l:'סוף זמן ק"ש',note:'מג"א',t:F(dawn+3*shaMGA)},{l:'סוף זמן ק"ש',note:'גר"א',t:F(rise+3*sha)},
+      {l:"סוף זמן תפילה",note:'גר"א',t:F(rise+4*sha)},{l:"חצות היום",note:"",t:F(noon)},
+      {l:"מנחה גדולה",note:"",t:F(noon+0.5*sha)},{l:"מנחה קטנה",note:"",t:F(rise+9.5*sha)},
+      {l:"פלג המנחה",note:"",t:F(rise+10.75*sha)},{l:"שקיעת החמה",note:"",t:F(set)},
+      {l:"צאת הכוכבים",note:tN,t:F(tzet)},{l:"__tzet__",t:tzet}
+    ];
+  }
+  function gematria(n){const o=['','א','ב','ג','ד','ה','ו','ז','ח','ט'],t=['','י','כ','ל','מ','נ','ס','ע','פ','צ'],h=['','ק','ר','ש','ת','תק','תר','תש','תת','תתק'];
+    let s=h[Math.floor(n/100)%10]||'';n%=100;if(n===15)s+='טו';else if(n===16)s+='טז';else{s+=t[Math.floor(n/10)];s+=o[n%10];}
+    if(s.length===1)return s+'׳';return s.slice(0,-1)+'״'+s.slice(-1);}
+  function nowInTZ(tz){const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})
+    .formatToParts(new Date()).reduce((a,x)=>(a[x.type]=x.value,a),{});let H=+p.hour%24;return {y:+p.year,m:+p.month,d:+p.day,H,M:+p.minute,S:+p.second,mins:H*60+(+p.minute)};}
+  function hebrewParts(y,m,d){const dt=new Date(Date.UTC(y,m-1,d,12,0,0));
+    const parts=new Intl.DateTimeFormat('he-u-ca-hebrew-nu-latn',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).formatToParts(dt).reduce((a,x)=>(a[x.type]=x.value,a),{});
+    return {day:parseInt(parts.day,10),month:parts.month,year:parseInt(parts.year,10)};}
+  function addDays(y,m,d,n){const dt=new Date(Date.UTC(y,m-1,d));dt.setUTCDate(dt.getUTCDate()+n);return {y:dt.getUTCFullYear(),m:dt.getUTCMonth()+1,d:dt.getUTCDate()};}
+  function utcMinToLocalMins(y,m,d,utcMin,tz){if(utcMin==null)return null;const dt=new Date(Date.UTC(y,m-1,d,0,0,0)+utcMin*60000);
+    const p=new Intl.DateTimeFormat('en-US',{timeZone:tz,hour12:false,hour:'2-digit',minute:'2-digit'}).formatToParts(dt).reduce((a,x)=>(a[x.type]=x.value,a),{});return (+p.hour%24)*60+(+p.minute);}
+
+  /* ================= state ================= */
+  let CFG=null, loc=null, annList=[], annIndex=0, annTimer=null, lastMinKey="", editing=false, localMode=false, driveMode=false;
+  function lsGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function lsSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+  function resolveLoc(l){let base;if(l.lat!=null&&l.lon!=null)base={lat:l.lat,lon:l.lon,elevation:l.elevation||0};
+    else base=Object.assign({elevation:0},PRESETS[l.preset]||PRESETS["ירושלים"]);
+    return {lat:base.lat,lon:base.lon,elevation:l.elevation!=null?l.elevation:base.elevation,tz:l.tz||"Asia/Jerusalem"};}
+  function defaultOpt(){return {alot:{method:'minutes',minutes:72,degrees:16.1},tzet:{method:'degrees',minutes:20,degrees:8.5},hebrewDateRollsAtNight:true};}
+
+  function applyAppearance(){
+    const ap=Object.assign(defaultAppearance(),CFG.appearance||{});
+    const th=THEMES[ap.theme]||THEMES.paroket, rs=document.documentElement.style;
+    rs.setProperty('--bg',th.bg);rs.setProperty('--bg2',th.bg2);rs.setProperty('--panel',th.panel);
+    rs.setProperty('--panel-edge',th.edge);rs.setProperty('--accent',th.accent);rs.setProperty('--accent-bright',th.accentB);
+    rs.setProperty('--text',th.text);rs.setProperty('--muted',th.muted);rs.setProperty('--grad',th.grad);
+    rs.setProperty('--serif',(FONTS[ap.font]||FONTS.classic).stack);
+    rs.setProperty('--scale',ap.textScale||1);
+    document.getElementById('frameEl').style.display=ap.frame===false?'none':'';
+    document.getElementById('secs').style.display=ap.showSeconds===false?'none':'';
+    return ap;
+  }
+  function applyConfig(){
+    CFG=window.SIGN; if(!CFG)return;
+    loc=resolveLoc(CFG.location||{});
+    const ap=applyAppearance();
+    const show=CFG.show||{};
+    const vis={tefilot:show.tefilot!==false,zmanim:show.zmanim!==false,announcements:show.announcements!==false};
+    document.getElementById('clockwrap').classList.toggle('hidden',show.clock===false);
+    let order=(ap.columnOrder||["tefilot","zmanim","announcements"]).filter(n=>vis[n]);
+    ["tefilot","zmanim","announcements"].forEach(n=>{document.getElementById(COLMAP[n]).classList.toggle('hidden',!vis[n]);});
+    order.forEach((n,i)=>{document.getElementById(COLMAP[n]).style.order=i;});
+    const widths=order.map(n=>((ap.columnWidths||{})[n]||1)+'fr').join(' ');
+    document.querySelector('main').style.gridTemplateColumns=widths||'1fr';
+    document.getElementById('footer').innerHTML='<b>'+esc(CFG.institution||'')+'</b>';
+    lastMinKey=""; buildAnnouncements(); tick();
+  }
+  function renderTefilot(nowMins){
+    const body=document.getElementById('tefilot-body'),T=CFG.tefilot||{};
+    const groups=[['שחרית',T.shacharit],['מנחה',T.mincha],['ערבית',T.arvit]];
+    let next=null;
+    if(CFG.show?.nextPrayer!==false){const all=[];groups.forEach(([g,arr])=>(arr||[]).forEach(x=>{const mm=parseHM(x.time);if(mm!=null)all.push({g,label:x.label,time:x.time,mm});}));
+      all.sort((a,b)=>a.mm-b.mm);next=all.find(x=>x.mm>=nowMins)||null;}
+    let html='';
+    groups.forEach(([g,arr])=>{if(!arr||!arr.length)return;html+='<div class="tgroup"><h3>'+g+'</h3>';
+      arr.forEach(x=>{const isNext=next&&next.g===g&&next.label===x.label&&next.time===x.time;
+        html+='<div class="trow'+(isNext?' is-next':'')+'"><span class="lbl">'+esc(x.label)+'</span><span class="tm">'+esc(x.time)+'</span></div>';});html+='</div>';});
+    body.innerHTML=html||'<div class="ann-empty">לא הוגדרו תפילות</div>';
+    const np=document.getElementById('nextprayer');
+    if(next){const diff=next.mm-nowMins;const txt=diff<=0?'עכשיו':('עוד '+(diff>=60?Math.floor(diff/60)+' ש׳ '+(diff%60)+' ד׳':diff+' ד׳'));
+      np.innerHTML='התפילה הבאה: <b>'+esc(next.g)+' '+esc(next.time)+'</b><span class="dot">•</span>'+txt;}else np.innerHTML='';
+  }
+  function renderZmanim(y,m,d){const z=computeZmanim(y,m,d,loc,CFG.zmanimOptions||defaultOpt());const body=document.getElementById('zmanim-body');let html='';
+    z.forEach(r=>{if(r.l==='__tzet__')return;html+='<div class="zrow"><span class="zlbl">'+r.l+(r.note?'<span class="znote">('+r.note+')</span>':'')+'</span><span class="ztm">'+r.t+'</span></div>';});body.innerHTML=html;}
+  function renderDate(){const opt=CFG.zmanimOptions||defaultOpt();let n=nowInTZ(loc.tz);
+    const z=computeZmanim(n.y,n.m,n.d,loc,opt);const tzetMin=z.find(r=>r.l==='__tzet__').t;const tzetLocal=utcMinToLocalMins(n.y,n.m,n.d,tzetMin,loc.tz);
+    let dy=n.y,dm=n.m,dd=n.d;if(opt.hebrewDateRollsAtNight!==false&&tzetLocal!=null&&n.mins>=tzetLocal){const a=addDays(n.y,n.m,n.d,1);dy=a.y;dm=a.m;dd=a.d;}
+    const hp=hebrewParts(dy,dm,dd);document.getElementById('hdate').textContent=gematria(hp.day)+' ב'+hp.month+' '+gematria(hp.year%1000);
+    const dowTZ=new Date(new Date().toLocaleString('en-US',{timeZone:loc.tz})).getDay();let wtxt=new Intl.DateTimeFormat('he-IL',{weekday:'long',timeZone:loc.tz}).format(new Date());
+    if(dowTZ===6)wtxt='שבת קודש';else if(dowTZ===5)wtxt='ערב שבת קודש';document.getElementById('weekday').textContent=wtxt;
+    document.getElementById('gdate').textContent=new Intl.DateTimeFormat('he-IL',{day:'numeric',month:'long',year:'numeric',timeZone:loc.tz}).format(new Date());
+    const par=document.getElementById('parasha');if(CFG.show?.parasha!==false&&CFG.parasha){par.textContent=CFG.parasha;par.classList.remove('hidden');}else par.classList.add('hidden');}
+  function buildAnnouncements(){const stage=document.getElementById('ann-stage'),dots=document.getElementById('ann-dots');
+    const today=new Date();today.setHours(0,0,0,0);
+    annList=(CFG.announcements||[]).filter(a=>{if(!a.until)return true;const u=new Date(a.until+'T23:59:59');return !isNaN(u)&&u>=today;});
+    stage.innerHTML='';dots.innerHTML='';
+    if(!annList.length){stage.innerHTML='<div class="ann-empty">—</div>';if(annTimer)clearInterval(annTimer);return;}
+    annList.forEach((a,i)=>{const el=document.createElement('div');el.className='slide'+(i===0?' on':'');
+      if(a.type==='image'&&a.image)el.innerHTML='<img src="'+esc(a.image)+'" alt="">'+(a.body?'<div class="a-cap">'+esc(a.body)+'</div>':'');
+      else el.innerHTML=(a.title?'<div class="a-title">'+esc(a.title)+'</div>':'')+(a.body?'<div class="a-body">'+esc(a.body).replace(/\n/g,'<br>')+'</div>':'');
+      stage.appendChild(el);const dd=document.createElement('span');if(i===0)dd.className='on';dots.appendChild(dd);});
+    annIndex=0;if(annTimer)clearInterval(annTimer);
+    if(annList.length>1)annTimer=setInterval(rotateAnn,(CFG.timing?.announcementSeconds||12)*1000);}
+  function rotateAnn(){const slides=document.querySelectorAll('#ann-stage .slide'),dots=document.querySelectorAll('#ann-dots span');if(slides.length<2)return;
+    slides[annIndex].classList.remove('on');dots[annIndex]&&dots[annIndex].classList.remove('on');annIndex=(annIndex+1)%slides.length;
+    slides[annIndex].classList.add('on');dots[annIndex]&&dots[annIndex].classList.add('on');}
+  function parseHM(s){if(!s)return null;const mch=/^(\d{1,2}):(\d{2})$/.exec(String(s).trim());if(!mch)return null;return (+mch[1])*60+(+mch[2]);}
+  function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+  function two(n){return (n<10?'0':'')+n;}
+  function tick(){if(!CFG)return;const n=nowInTZ(loc.tz);document.getElementById('clock').textContent=two(n.H)+':'+two(n.M);document.getElementById('secs').textContent=two(n.S);
+    renderTefilot(n.mins);const minKey=n.y+'-'+n.m+'-'+n.d+'-'+n.H+'-'+n.M;if(minKey!==lastMinKey){lastMinKey=minKey;renderZmanim(n.y,n.m,n.d);renderDate();}}
+
+  /* ================= content refresh ================= */
+  let lastSrc=null, fetchOK=false, hardTimer=null;
+  async function pollContent(){if(editing||localMode)return;
+    try{const r=await fetch('content.js?ts='+Date.now(),{cache:'no-store'});const txt=await r.text();fetchOK=true;
+      if(txt!==lastSrc){lastSrc=txt;try{(0,eval)(txt);document.getElementById('errbar').style.display='none';applyConfig();}
+        catch(e){document.getElementById('errbar').style.display='block';console.error('content.js error',e);}}}
+    catch(e){fetchOK=false;if(!hardTimer){hardTimer=setTimeout(()=>location.reload(),(window.SIGN&&window.SIGN.timing&&window.SIGN.timing.hardReloadSeconds||600)*1000);}}}
+
+  /* ================= EDIT MODE ================= */
+  let draft=null;
+  function clone(o){return JSON.parse(JSON.stringify(o));}
+  function getPath(o,p){return p.split('.').reduce((a,k)=>a==null?a:a[k],o);}
+  function setPath(o,p,v){const ks=p.split('.');let cur=o;for(let i=0;i<ks.length-1;i++){const k=ks[i];if(cur[k]==null)cur[k]=/^\d+$/.test(ks[i+1])?[]:{};cur=cur[k];}cur[ks[ks.length-1]]=v;}
+  function normalizeDraft(){ // fill defaults so form is complete
+    draft.show=Object.assign({clock:true,parasha:true,tefilot:true,zmanim:true,announcements:true,nextPrayer:true},draft.show||{});
+    draft.appearance=Object.assign(defaultAppearance(),draft.appearance||{});
+    draft.appearance.columnWidths=Object.assign({tefilot:1.1,zmanim:1,announcements:1.45},draft.appearance.columnWidths||{});
+    draft.location=Object.assign({preset:"ירושלים",lat:null,lon:null,elevation:0,tz:"Asia/Jerusalem"},draft.location||{});
+    draft.tefilot=Object.assign({shacharit:[],mincha:[],arvit:[]},draft.tefilot||{});
+    draft.announcements=draft.announcements||[];
+    draft.timing=Object.assign({announcementSeconds:12,softRefreshSeconds:20,hardReloadSeconds:600},draft.timing||{});
+    draft.zmanimOptions=Object.assign(defaultOpt(),draft.zmanimOptions||{});
+    draft.zmanimOptions.alot=Object.assign({method:'minutes',minutes:72,degrees:16.1},draft.zmanimOptions.alot||{});
+    draft.zmanimOptions.tzet=Object.assign({method:'degrees',minutes:20,degrees:8.5},draft.zmanimOptions.tzet||{});
+  }
+  function openEdit(){editing=true;draft=clone(window.SIGN||{});normalizeDraft();buildForm();document.getElementById('editor').classList.add('open');refreshClr();note(localMode?'מצב מכשיר פעיל — נשמר בטלפון/מחשב הזה.':'שינויים מוצגים מיד. שמור לקובץ או במכשיר.','');}
+  function closeEdit(){editing=false;document.getElementById('editor').classList.remove('open');lastSrc=null;setTimeout(pollContent,300);}
+  function note(t,cls){const n=document.getElementById('ed-note');n.textContent=t;n.className='ed-note'+(cls?' '+cls:'');}
+  function live(){window.SIGN=draft;applyConfig();}
+
+  function buildForm(){
+    const f=document.getElementById('ed-form');const ap=draft.appearance;
+    let h='';
+    // כללי
+    h+=sec('כללי',true,
+      fld('שם המוסד',inp('text','institution',draft.institution||''))+
+      fld('פרשת השבוע (ריק = מוסתר)',inp('text','parasha',draft.parasha||''))+
+      fld('עיר (לחישוב זמנים)',sel('location.preset',Object.keys(PRESETS).concat(['מותאם אישית']),customCity()?'מותאם אישית':(draft.location.preset||'ירושלים')))+
+      (customCity()?
+        '<div class="fld row">'+mini('קו רוחב',inp('number','location.lat',draft.location.lat==null?'':draft.location.lat))+mini('קו אורך',inp('number','location.lon',draft.location.lon==null?'':draft.location.lon))+'</div>'+
+        fld('גובה (מ׳)',inp('number','location.elevation',draft.location.elevation||0)):'')
+    );
+    // תצוגה
+    h+=sec('מה מוצג',true,
+      chk('show.tefilot','עמודת תפילות',draft.show.tefilot)+chk('show.zmanim','עמודת זמנים',draft.show.zmanim)+
+      chk('show.announcements','עמודת הודעות',draft.show.announcements)+chk('show.clock','שעון',draft.show.clock)+
+      chk('appearance.showSeconds','שניות בשעון',ap.showSeconds)+chk('show.parasha','פרשת השבוע',draft.show.parasha)+
+      chk('show.nextPrayer','הדגשת התפילה הבאה',draft.show.nextPrayer)
+    );
+    // עיצוב (צורת המסך)
+    let sw='<div class="swatches">';Object.keys(THEMES).forEach(k=>{const th=THEMES[k];
+      sw+='<div class="sw'+(ap.theme===k?' sel':'')+'" data-theme="'+k+'" style="background:'+th.chip+';border-color:'+(ap.theme===k?'#fff':th.accent)+'"><span>'+th.name+'</span></div>';});sw+='</div>';
+    let order=(ap.columnOrder||["tefilot","zmanim","announcements"]);
+    let ord='<div class="fld"><label>סדר ורוחב עמודות (מימין לשמאל)</label>';
+    order.forEach((n,i)=>{ord+='<div class="listrow"><div class="rowtop"><span style="flex:1;color:var(--text)">'+COLNAME[n]+'</span>'+
+      '<div class="movebtns"><button class="minibtn" data-mv="up" data-i="'+i+'">▲</button><button class="minibtn" data-mv="dn" data-i="'+i+'">▼</button></div></div>'+
+      '<div class="rangewrap" style="margin-top:.4rem"><input type="range" min="0.6" max="2" step="0.05" data-path="appearance.columnWidths.'+n+'" value="'+((ap.columnWidths||{})[n]||1)+'"><span class="val">'+(((ap.columnWidths||{})[n]||1)).toFixed(2)+'</span></div></div>';});
+    ord+='</div>';
+    h+=sec('עיצוב וצורת המסך',true,
+      '<div class="fld"><label>ערכת צבעים</label>'+sw+'</div>'+
+      fld('גופן',sel('appearance.font',Object.keys(FONTS).map(k=>k),ap.font,Object.keys(FONTS).map(k=>FONTS[k].name)))+
+      '<div class="fld"><label>גודל טקסט</label><div class="rangewrap"><input type="range" min="0.8" max="1.4" step="0.02" data-path="appearance.textScale" value="'+(ap.textScale||1)+'"><span class="val">'+Math.round((ap.textScale||1)*100)+'%</span></div></div>'+
+      chk('appearance.frame','מסגרת זהב',ap.frame)+ord
+    );
+    // תפילות
+    h+=sec('זמני תפילות',false,
+      tefBlock('shacharit','שחרית')+tefBlock('mincha','מנחה')+tefBlock('arvit','ערבית'));
+    // הודעות
+    let an='';draft.announcements.forEach((a,i)=>{an+=annBlock(a,i);});
+    an+='<button class="addbtn" data-add="ann">+ הוסף הודעה</button>';
+    h+=sec('הודעות ופרסומים',false,an);
+    // זמנים מתקדם
+    const zo=draft.zmanimOptions;
+    h+=sec('זמנים הלכתיים (מתקדם)',false,
+      fld('שיטת עלות השחר',sel('zmanimOptions.alot.method',['minutes','degrees'],zo.alot.method,['דקות לפני נץ','מעלות']))+
+      '<div class="fld row">'+mini('דקות',inp('number','zmanimOptions.alot.minutes',zo.alot.minutes))+mini('מעלות',inp('number','zmanimOptions.alot.degrees',zo.alot.degrees))+'</div>'+
+      fld('שיטת צאת הכוכבים',sel('zmanimOptions.tzet.method',['minutes','degrees'],zo.tzet.method,['דקות אחרי שקיעה','מעלות']))+
+      '<div class="fld row">'+mini('דקות',inp('number','zmanimOptions.tzet.minutes',zo.tzet.minutes))+mini('מעלות',inp('number','zmanimOptions.tzet.degrees',zo.tzet.degrees))+'</div>'+
+      chk('zmanimOptions.hebrewDateRollsAtNight','תאריך עברי מתחלף בצאת הכוכבים',zo.hebrewDateRollsAtNight)
+    );
+    // קצב
+    h+=sec('קצב ורענון',false,
+      fld('שניות לכל הודעה',inp('number','timing.announcementSeconds',draft.timing.announcementSeconds))+
+      fld('בדיקת עדכונים (שניות)',inp('number','timing.softRefreshSeconds',draft.timing.softRefreshSeconds))+
+      fld('טעינה מלאה מחדש (שניות)',inp('number','timing.hardReloadSeconds',draft.timing.hardReloadSeconds))
+    );
+    h+=sec('מקור עדכון מ-Google Drive',false,
+      fld('Drive API Key',lsInp('drive_apikey'))+
+      fld('File ID (מזהה הקובץ)',lsInp('drive_fileid'))+
+      '<button class="addbtn" data-driveapply>הפעל מצב Drive (טעינה מחדש)</button>'+
+      '<div style="font-size:.75rem;color:var(--muted);margin-top:.5rem;line-height:1.6">כשמזינים כאן ערכים, המסך יבדוק את הקובץ ב-Drive כל כמה שניות ויתעדכן לבד. את שני הערכים מקבלים בשלט הרחוק אחרי "חבר Google Drive". לניקוי — מחק את השדות והפעל מחדש.</div>'
+    );
+    f.innerHTML=h;bindForm();
+  }
+  function customCity(){return draft.location&&draft.location.lat!=null&&draft.location.lon!=null;}
+  function sec(title,open,inner){return '<details class="sec"'+(open?' open':'')+'><summary>'+title+'</summary><div class="sec-in">'+inner+'</div></details>';}
+  function fld(label,inner){return '<div class="fld"><label>'+label+'</label>'+inner+'</div>';}
+  function mini(label,inner){return '<div><label style="display:block;font-size:.75rem;color:var(--muted);margin-bottom:.2rem">'+label+'</label>'+inner+'</div>';}
+  function inp(type,path,val){return '<input type="'+type+'" data-path="'+path+'" value="'+esc(val)+'">';}
+  function lsInp(key){return '<input type="text" data-ls="'+key+'" value="'+esc(lsGet(key)||'')+'">';}
+  function chk(path,label,val){return '<label class="chk"><input type="checkbox" data-path="'+path+'"'+(val?' checked':'')+'>'+label+'</label>';}
+  function sel(path,vals,cur,labels){let o='';vals.forEach((v,i)=>{o+='<option value="'+esc(v)+'"'+(String(v)===String(cur)?' selected':'')+'>'+esc(labels?labels[i]:v)+'</option>';});return '<select data-path="'+path+'">'+o+'</select>';}
+  function tefBlock(key,label){let rows='';(draft.tefilot[key]||[]).forEach((x,i)=>{rows+=
+    '<div class="listrow"><div class="rowtop">'+
+    '<input type="text" data-path="tefilot.'+key+'.'+i+'.label" value="'+esc(x.label||'')+'" placeholder="שם המניין">'+
+    '<input type="time" data-path="tefilot.'+key+'.'+i+'.time" value="'+esc(x.time||'')+'" style="max-width:8.5rem">'+
+    '<button class="minibtn" data-del="tefilot.'+key+'.'+i+'">🗑</button></div></div>';});
+    return '<div class="fld"><label>'+label+'</label>'+rows+'<button class="addbtn" data-add="tef:'+key+'">+ הוסף מניין</button></div>';}
+  function annBlock(a,i){const isImg=a.type==='image';
+    return '<div class="listrow"><div class="rowtop">'+
+      sel('announcements.'+i+'.type',['text','image'],a.type||'text',['טקסט','תמונה'])+
+      '<div class="movebtns"><button class="minibtn" data-mva="up" data-i="'+i+'">▲</button><button class="minibtn" data-mva="dn" data-i="'+i+'">▼</button></div>'+
+      '<button class="minibtn" data-dela="'+i+'">🗑</button></div>'+
+      (isImg?
+        fld2('קובץ תמונה (images/...)',inp('text','announcements.'+i+'.image',a.image||''))+fld2('כיתוב',inp('text','announcements.'+i+'.body',a.body||'')):
+        fld2('כותרת',inp('text','announcements.'+i+'.title',a.title||''))+'<div class="fld" style="margin:.4rem 0 0"><textarea data-path="announcements.'+i+'.body" placeholder="תוכן ההודעה">'+esc(a.body||'')+'</textarea></div>')+
+      fld2('תפוגה (ריק = תמידי)',inp('date','announcements.'+i+'.until',a.until||''))+
+      '</div>';}
+  function fld2(label,inner){return '<div class="fld" style="margin:.4rem 0 0"><label>'+label+'</label>'+inner+'</div>';}
+
+  function bindForm(){
+    const f=document.getElementById('ed-form');
+    f.querySelectorAll('[data-path]').forEach(el=>{
+      const ev=(el.type==='checkbox'||el.tagName==='SELECT'||el.type==='range')?'change':'input';
+      el.addEventListener(ev,()=>{
+        let v;
+        if(el.type==='checkbox')v=el.checked;
+        else if(el.type==='number'||el.type==='range')v=el.value===''?null:Number(el.value);
+        else v=el.value;
+        setPath(draft,el.getAttribute('data-path'),v);
+        if(el.getAttribute('data-path')==='location.preset'){
+          if(v==='מותאם אישית'){const p=PRESETS['ירושלים'];draft.location.lat=p.lat;draft.location.lon=p.lon;draft.location.elevation=p.elevation;}
+          else{draft.location.lat=null;draft.location.lon=null;}
+          live();buildForm();return;
+        }
+        if(el.type==='range'){const val=el.parentElement.querySelector('.val');if(val)val.textContent=el.getAttribute('data-path')==='appearance.textScale'?Math.round(v*100)+'%':Number(v).toFixed(2);}
+        live();
+      });
+    });
+    f.querySelectorAll('.sw[data-theme]').forEach(el=>el.addEventListener('click',()=>{draft.appearance.theme=el.getAttribute('data-theme');live();buildForm();}));
+    f.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click',()=>{const p=b.getAttribute('data-del').split('.');const idx=+p.pop();const arr=getPath(draft,p.join('.'));arr.splice(idx,1);live();buildForm();}));
+    f.querySelectorAll('[data-dela]').forEach(b=>b.addEventListener('click',()=>{draft.announcements.splice(+b.getAttribute('data-dela'),1);live();buildForm();}));
+    f.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{const a=b.getAttribute('data-add');
+      if(a==='ann')draft.announcements.push({type:'text',title:'הודעה חדשה',body:'',image:'',until:''});
+      else if(a.startsWith('tef:')){const k=a.slice(4);draft.tefilot[k]=draft.tefilot[k]||[];draft.tefilot[k].push({label:'מניין',time:'08:00'});}
+      live();buildForm();}));
+    f.querySelectorAll('[data-mv]').forEach(b=>b.addEventListener('click',()=>{const i=+b.getAttribute('data-i'),dir=b.getAttribute('data-mv')==='up'?-1:1;
+      const arr=draft.appearance.columnOrder;const j=i+dir;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];live();buildForm();}));
+    f.querySelectorAll('[data-mva]').forEach(b=>b.addEventListener('click',()=>{const i=+b.getAttribute('data-i'),dir=b.getAttribute('data-mva')==='up'?-1:1;
+      const arr=draft.announcements;const j=i+dir;if(j<0||j>=arr.length)return;[arr[i],arr[j]]=[arr[j],arr[i]];live();buildForm();}));
+    f.querySelectorAll('[data-ls]').forEach(el=>el.addEventListener('input',()=>lsSet(el.getAttribute('data-ls'),el.value.trim())));
+    const dap=f.querySelector('[data-driveapply]');if(dap)dap.addEventListener('click',()=>{note('מפעיל מצב Drive...','');setTimeout(()=>location.reload(),400);});
+  }
+
+  /* ---- serialize + save ---- */
+  function generateJS(){return "/* לוח בית הכנסת — קובץ תוכן.  נערך דרך מצב עריכה (מקש E) או ידנית. */\nwindow.SIGN = "+JSON.stringify(draft,null,2)+";\n";}
+  function download(){const blob=new Blob([generateJS()],{type:'text/javascript'});const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='content.js';a.click();URL.revokeObjectURL(u);note('ירד content.js — החלף בו את הקובץ הקיים בתיקייה.','ok');}
+  async function copyCode(){try{await navigator.clipboard.writeText(generateJS());note('הקוד הועתק. הדבק בקובץ content.js.','ok');}catch(e){note('העתקה נכשלה — השתמש בהורדה.','bad');}}
+  // File System Access
+  function idb(){return new Promise((res,rej)=>{const r=indexedDB.open('luach',1);r.onupgradeneeded=()=>r.result.createObjectStore('kv');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+  async function idbGet(k){const db=await idb();return new Promise((res)=>{const t=db.transaction('kv').objectStore('kv').get(k);t.onsuccess=()=>res(t.result);t.onerror=()=>res(null);});}
+  async function idbSet(k,v){const db=await idb();return new Promise((res)=>{const t=db.transaction('kv','readwrite').objectStore('kv').put(v,k);t.onsuccess=()=>res(1);t.onerror=()=>res(0);});}
+  async function ensurePerm(h){const opt={mode:'readwrite'};if(await h.queryPermission(opt)==='granted')return true;if(await h.requestPermission(opt)==='granted')return true;return false;}
+  async function saveToFile(){
+    if(!window.showOpenFilePicker){download();return;}
+    try{
+      let h=await idbGet('handle');
+      if(!h){[h]=await window.showOpenFilePicker({types:[{description:'content.js',accept:{'text/javascript':['.js']}}],multiple:false});await idbSet('handle',h);}
+      if(!(await ensurePerm(h))){note('לא ניתנה הרשאת כתיבה.','bad');return;}
+      const w=await h.createWritable();await w.write(generateJS());await w.close();
+      try{localStorage.removeItem('luach_config');}catch(e){}localMode=false;refreshClr();
+      lastSrc=generateJS();note('נשמר בהצלחה לקובץ content.js ✓','ok');
+    }catch(e){if(e&&e.name==='AbortError'){note('הביטול — לא נשמר.','');return;}
+      console.error(e);note('שמירה ישירה נכשלה — משתמש בהורדה.','bad');download();}
+  }
+
+  /* ---- device save + backup (works on phone) ---- */
+  function refreshClr(){var b=document.getElementById('btn-clrlocal');if(b)b.style.display=localMode?'block':'none';}
+  function saveDevice(){try{localStorage.setItem('luach_config',JSON.stringify(draft));localMode=true;window.SIGN=draft;applyConfig();refreshClr();
+    note('נשמר במכשיר ✓ — המסך יזכור את זה ויתעדכן אוטומטית כאן.','ok');}catch(e){note('שמירה במכשיר נכשלה','bad');}}
+  function clearLocal(){try{localStorage.removeItem('luach_config');}catch(e){}localMode=false;refreshClr();note('בוטל מצב מכשיר — חוזר לקובץ content.js.','');lastSrc=null;pollContent();}
+  function parseBackup(text){text=String(text).trim();if(text.charAt(0)==='{')return JSON.parse(text);var w={};(function(){var window=w;eval(text);})();if(w.SIGN)return w.SIGN;throw new Error('bad');}
+  function loadBackupFile(file){if(!file)return;var r=new FileReader();r.onload=function(){try{var cfg=parseBackup(r.result);draft=cfg;normalizeDraft();window.SIGN=draft;applyConfig();buildForm();
+    note('הגיבוי נטען ✓ — לחץ "שמור במכשיר" או "שמור לקובץ" כדי להחיל לצמיתות.','ok');}catch(e){note('קובץ גיבוי לא תקין','bad');}};r.readAsText(file);}
+  function downloadBackup(){var d=new Date();var name='luach-backup-'+d.getFullYear()+two(d.getMonth()+1)+two(d.getDate())+'.js';
+    var blob=new Blob([generateJS()],{type:'text/javascript'});var u=URL.createObjectURL(blob);var a=document.createElement('a');a.href=u;a.download=name;a.click();URL.revokeObjectURL(u);note('הורד גיבוי: '+name,'ok');}
+
+  /* ---- Google Drive polling (display reads Drive every few seconds) ---- */
+  let driveLast=null, driveErr=0;
+  async function pollDrive(){
+    if(editing)return;var id=lsGet('drive_fileid'),key=lsGet('drive_apikey');if(!id||!key)return;
+    try{
+      var r=await fetch('https://www.googleapis.com/drive/v3/files/'+encodeURIComponent(id)+'?alt=media&key='+encodeURIComponent(key)+'&t='+Date.now(),{cache:'no-store'});
+      if(!r.ok)throw new Error('http '+r.status);
+      var txt=await r.text();driveErr=0;
+      if(txt!==driveLast){driveLast=txt;try{(0,eval)(txt);document.getElementById('errbar').style.display='none';applyConfig();}
+        catch(e){document.getElementById('errbar').textContent='שגיאה בקובץ מ-Drive — מציג גרסה קודמת';document.getElementById('errbar').style.display='block';}}
+    }catch(e){driveErr++;if(driveErr===3){document.getElementById('errbar').textContent='אין גישה לקובץ ב-Drive (בדוק File ID / API Key / שיתוף)';document.getElementById('errbar').style.display='block';}}
+  }
+
+  /* ================= boot ================= */
+  function boot(){
+    var driveOn=lsGet('drive_fileid')&&lsGet('drive_apikey');
+    var lsc=null;try{lsc=localStorage.getItem('luach_config');}catch(e){}
+    if(driveOn){driveMode=true;}
+    else if(lsc){try{window.SIGN=JSON.parse(lsc);localMode=true;}catch(e){}}
+    if(!window.SIGN){document.getElementById('errbar').textContent='לא נמצא קובץ content.js תקין';document.getElementById('errbar').style.display='block';window.SIGN={};}
+    applyConfig();setInterval(tick,1000);lastSrc=null;
+    var soft=(window.SIGN.timing&&window.SIGN.timing.softRefreshSeconds||20)*1000;
+    if(driveMode){pollDrive();setInterval(pollDrive,soft);}
+    else if(!localMode){pollContent();setInterval(pollContent,soft);}
+    // edit triggers
+    document.addEventListener('keydown',e=>{if((e.key==='e'||e.key==='E')&&!/input|textarea|select/i.test(document.activeElement.tagName)){e.preventDefault();document.getElementById('editor').classList.contains('open')?closeEdit():openEdit();}
+      if(e.key==='Escape'&&document.getElementById('editor').classList.contains('open'))closeEdit();});
+    document.getElementById('gear').addEventListener('click',openEdit);
+    document.getElementById('ed-close').addEventListener('click',closeEdit);
+    document.getElementById('ed-scrim').addEventListener('click',closeEdit);
+    document.getElementById('btn-save').addEventListener('click',saveToFile);
+    document.getElementById('btn-savedev').addEventListener('click',saveDevice);
+    document.getElementById('btn-load').addEventListener('click',function(){document.getElementById('backupfile').click();});
+    document.getElementById('backupfile').addEventListener('change',function(){loadBackupFile(this.files[0]);this.value='';});
+    document.getElementById('btn-clrlocal').addEventListener('click',clearLocal);
+    document.getElementById('btn-copy').addEventListener('click',copyCode);
+    document.getElementById('btn-download').addEventListener('click',downloadBackup);
+    if(location.hash==='#edit')openEdit();
+    // live preview from the remote editor (embedded as iframe)
+    window.addEventListener('message',function(e){var d=e.data;if(d&&d.type==='luachPreview'&&d.config){editing=true;window.SIGN=d.config;applyConfig();}});
+    if(window.parent!==window){document.getElementById('gear').style.display='none';}
+    // show gear on activity
+    let gt;const gear=document.getElementById('gear');
+    function poke(){gear.classList.add('show');clearTimeout(gt);gt=setTimeout(()=>gear.classList.remove('show'),3500);}
+    ['mousemove','touchstart','click'].forEach(ev=>document.addEventListener(ev,poke,{passive:true}));
+  }
+  boot();
+  </script>
+</body>
+</html>
